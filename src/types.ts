@@ -103,6 +103,8 @@ export interface GeocodingResult {
   raw: unknown;
 }
 
+export type RoutingProvider = 'osrm' | 'brouter' | 'valhalla';
+
 export interface AppPreferences {
   theme: 'light' | 'dark' | 'system';
   lastStart: LatLng | null;
@@ -114,6 +116,7 @@ export interface AppPreferences {
   maxElevationM: number | null;
   defaultStart: LatLng | null;
   defaultStartLabel: string;
+  routingProvider: RoutingProvider;
 }
 
 export interface ActivityState {

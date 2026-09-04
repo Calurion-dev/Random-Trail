@@ -50,4 +50,5 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   maxElevationM: null,
   defaultStart: null,
   defaultStartLabel: '',
+  routingProvider: 'osrm',
 };

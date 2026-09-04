@@ -12,16 +12,17 @@ Pas de réseau social, pas de coaching, pas de compétition, pas de paiement.
 
 ## Fonctionnalités
 
-- Génération automatique (boucle, aller-retour, A→B, étapes, multi-points) via OSRM public
+- Génération automatique (boucle, aller-retour, A→B, étapes, multi-points) via OSRM / BRouter / Valhalla (sélecteur en réglages, fallback OSRM)
 - Régénération aléatoire avec seed
-- Édition manuelle : clic carte, drag, suppression d'étapes
-- Profil altimétrique (Open-Meteo Elevation) + stats (distance, durée estimée, D+/D-, scores)
+- Édition manuelle : clic carte, drag markers, suppression, **réordonnancement par drag-list** (↑/↓ + glisser)
+- Profil altimétrique (Open-Meteo Elevation) + stats + **score qualité terrain OSM** (highway/cycleway/path via Overpass)
 - POI best-effort (eau potable, toilettes, abri, banc, viewpoint) via Overpass
-- Import GPX/KML, export GPX/KML/SVG/GeoJSON, partage par URL compressée (lz-string)
+- Import **GPX/KML/GeoJSON**, export **GPX/KML/SVG/GeoJSON**, partage par URL compressée (lz-string) + **QR code**
 - Sauvegarde locale IndexedDB (Dexie), préférences localStorage
 - Mode activité : suivi GPS, distance/D+ restants, vitesse/allure, cap, alerte hors-parcours, wake lock
-- PWA online-first (vite-plugin-pwa) avec cache tiles/app shell
-- Thème clair/sombre (filtre Leaflet pour tuiles sombres)
+- **Mode entraînement** (intervalles) et **météo au départ** (Open-Meteo Forecast)
+- PWA online-first (vite-plugin-pwa) avec cache tiles/app shell + **diagnostic cache offline**
+- Thème clair/sombre/système (filtre Leaflet pour tuiles sombres)
 - UI 100% en français, responsive (sidebar/desktop, bottom sheet/mobile)
 
 ## Stack
@@ -67,8 +68,8 @@ Option action GitHub : build puis `actions/deploy-pages`.
 1. **Choisir départ** : géolocalisation, recherche Nominatim, ou clic carte. Le thème sombre assombrit les tuiles via CSS filter.
 2. **Régler contraintes** : sport/sous-type, type de parcours, distance ou durée (distance prioritaire), direction (0-359°), boucles, difficulté, dénivelé max, distance max, terrain, POI.
 3. **Générer** : 2-3 candidats sont évalués, le meilleur score global est retenu. **Régénérer** change le seed.
-4. **Manuel** : activer “Édition manuelle”, cliquer pour ajouter des étapes, glisser/déplacer, popup pour supprimer.
-5. **Importer** : bouton Importer (GPX/KML) — affichage, calcul stats, sauvegarde possible.
+4. **Manuel** : activer “Édition manuelle”, cliquer pour ajouter des étapes, glisser/déplacer, **réordonner via la liste (drag ↑/↓)**, popup pour supprimer.
+5. **Importer** : bouton Importer (GPX/KML/GeoJSON) — affichage, calcul stats, sauvegarde possible. **QR** : dans le bloc actions du parcours, “Afficher QR” génère un QR du lien partagé.
 
 ## Génération de parcours
 
@@ -135,20 +136,23 @@ Toutes les requêtes ont cache, rate-limit (≥300 ms OSRM), debounce, dégradat
 
 ## Améliorations futures
 
-- Profils routage custom (BRouter/Valhalla) pour VTT/trail
-- Quality terrain (highway/cycleway) via Overpass plus fin
-- Édition ordre étapes par drag-list
-- Partage via QR, import GeoJSON
-- Mode entraînement (intervalles), météo, offline tiles pack
-- Tests E2E (Playwright), CI Pages
+- ~~Profils routage custom (BRouter/Valhalla)~~ ✅ fait — sélecteur OSRM/BRouter/Valhalla en réglages (`src/lib/routing.ts`)
+- ~~Quality terrain via Overpass~~ ✅ fait — `src/lib/osmQuality.ts` analyse highway/cycleway/path
+- ~~Édition ordre étapes par drag-list~~ ✅ fait — `src/components/WaypointList.tsx`
+- ~~Partage via QR, import GeoJSON~~ ✅ fait — `src/components/ShareQR.tsx`, `parseGeoJSON`/`parseAny`
+- ~~Mode entraînement, météo, offline tiles pack~~ ✅ fait — `TrainingMode.tsx`, `WeatherWidget.tsx`, réglages cache tiles
+- ~~Tests E2E (Playwright), CI Pages~~ ✅ fait — `playwright.config.ts`, `e2e/generator.spec.ts`, `.github/workflows/ci.yml`
+
+Pistes restantes : sync Strava/Google Fit (OAuth backend requis), édition fine du tracé point-à-point, tuiles offline pack pré-téléchargement.
 
 ## Tests
 
 ```bash
-npm test
+npm test          # unitaires (Vitest)
+npm run test:e2e  # E2E (Playwright, npx playwright install requis)
 ```
 
-Couvre durée, difficulté, score global, ascent, exports GPX/KML/SVG.
+Couvre durée, difficulté, score global, ascent, exports GPX/KML/SVG. E2E couvre navigation, formulaire, import, réglages.
 
 ## Licence
 

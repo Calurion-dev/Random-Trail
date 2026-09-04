@@ -1,12 +1,44 @@
 import { useSettingsStore } from '../../store/settingsStore';
 import { DEFAULT_SPEEDS } from '../../constants/sports';
+import { useState } from 'react';
 
 export function SettingsForm() {
   const s = useSettingsStore();
+  const [tileStatus, setTileStatus] = useState<string>('');
+
+  const handleCacheTiles = async () => {
+    if (!('caches' in window)) { setTileStatus('Cache API non disponible'); return; }
+    setTileStatus('Mise en cache… (nécessite avoir navigué la zone — cache à la volée via PWA)');
+    try {
+      const cache = await caches.open('tiles-osm');
+      setTileStatus(`Cache tuiles: ${(await cache.keys()).length} entrées déjà en cache (navigation préalable requise).`);
+    } catch { setTileStatus('Erreur cache'); }
+  };
 
   return (
     <div style={{ padding: 16, maxWidth: 640 }}>
       <h2 style={{ marginBottom: 12 }}>Réglages</h2>
+
+      <div className="form-section" style={{ border: '1px solid var(--border)', borderRadius: 12, marginBottom: 12 }}>
+        <div className="form-title">Thème & moteur de routage</div>
+        <div className="field">
+          <label className="label">Thème</label>
+          <select className="select" value={s.theme} onChange={(e) => s.set({ theme: e.target.value as any })}>
+            <option value="system">Système</option>
+            <option value="light">Clair</option>
+            <option value="dark">Sombre</option>
+          </select>
+        </div>
+        <div className="field">
+          <label className="label">Moteur de routage</label>
+          <select className="select" value={s.routingProvider} onChange={(e) => s.set({ routingProvider: e.target.value as any })}>
+            <option value="osrm">OSRM (par défaut, rapide)</option>
+            <option value="brouter">BRouter (VTT/trail recommandé, beta)</option>
+            <option value="valhalla">Valhalla (alternatif, beta)</option>
+          </select>
+          <div style={{ fontSize: '.75rem', color: 'var(--text3)', marginTop: 4 }}>BRouter/Valhalla sont expérimentaux et basculent automatiquement sur OSRM en cas d'échec.</div>
+        </div>
+      </div>
 
       <div className="form-section" style={{ border: '1px solid var(--border)', borderRadius: 12, marginBottom: 12 }}>
         <div className="form-title">Position de départ par défaut</div>
@@ -53,6 +85,13 @@ export function SettingsForm() {
           <label className="label">Dénivelé max (m) — vide = illimité</label>
           <input className="input" type="number" value={s.maxElevationM ?? ''} placeholder="illimité" onChange={(e) => s.set({ maxElevationM: e.target.value ? parseInt(e.target.value) : null })} />
         </div>
+      </div>
+
+      <div className="form-section" style={{ border: '1px solid var(--border)', borderRadius: 12, marginBottom: 12 }}>
+        <div className="form-title">Offline — pack tuiles</div>
+        <p style={{ fontSize: '.85rem', color: 'var(--text2)' }}>Les tuiles OSM visitées sont mises en cache (cache-first 500 entrées/30j). Naviguez d'abord la zone souhaitée, puis elle sera disponible hors-ligne.</p>
+        <button className="btn btn-secondary btn-small" onClick={handleCacheTiles} style={{ marginTop: 8 }}>Vérifier le cache tuiles</button>
+        {tileStatus && <div style={{ fontSize: '.8rem', marginTop: 6, color: 'var(--text3)' }}>{tileStatus}</div>}
       </div>
 
       <div className="form-section" style={{ border: '1px solid var(--border)', borderRadius: 12, marginBottom: 12 }}>

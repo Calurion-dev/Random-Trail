@@ -1,7 +1,9 @@
 import type { GeneratedRoute } from '../../types';
-import { exportGPX, exportKML, exportSVG, downloadFile } from '../../lib/exporters';
+import { exportGPX, exportKML, exportSVG, exportGeoJSON, downloadFile } from '../../lib/exporters';
 import { buildShareUrl } from '../../lib/share';
 import { useSavedRoutesStore } from '../../store/savedRoutesStore';
+import ShareQR from '../ShareQR';
+import TrainingMode from '../TrainingMode';
 
 export function RouteActions({ route, onStartActivity }: { route: GeneratedRoute | null; onStartActivity?: () => void }) {
   const save = useSavedRoutesStore((s) => s.save);
@@ -45,15 +47,22 @@ export function RouteActions({ route, onStartActivity }: { route: GeneratedRoute
     downloadFile(gpx, `${route.title}.gpx`, 'application/gpx+xml');
   };
 
+  const handleGeoJSON = () => downloadFile(exportGeoJSON(route), `${route.title}.geojson`, 'application/geo+json');
+
   return (
-    <div style={{ padding: 12, display: 'flex', flexWrap: 'wrap', gap: 8, borderTop: '1px solid var(--border)' }}>
-      <button className="btn" onClick={handleSave}>💾 Enregistrer</button>
-      <button className="btn btn-secondary" onClick={handleGPX}>GPX</button>
-      <button className="btn btn-secondary" onClick={handleKML}>KML</button>
-      <button className="btn btn-secondary" onClick={handleSVG}>SVG</button>
-      <button className="btn btn-secondary" onClick={handleShare}>🔗 Partager</button>
-      <button className="btn btn-secondary" onClick={handleWatch}>⌚ Envoyer vers montre</button>
-      {onStartActivity && <button className="btn" style={{ background: '#10b981' }} onClick={onStartActivity}>▶ Lancer l'activité</button>}
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <button className="btn" onClick={handleSave}>💾 Enregistrer</button>
+        <button className="btn btn-secondary" onClick={handleGPX}>GPX</button>
+        <button className="btn btn-secondary" onClick={handleKML}>KML</button>
+        <button className="btn btn-secondary" onClick={handleSVG}>SVG</button>
+        <button className="btn btn-secondary" onClick={handleGeoJSON}>GeoJSON</button>
+        <button className="btn btn-secondary" onClick={handleShare}>🔗 Partager</button>
+        <button className="btn btn-secondary" onClick={handleWatch}>⌚ Envoyer vers montre</button>
+        {onStartActivity && <button className="btn" style={{ background: '#10b981' }} onClick={onStartActivity}>▶ Lancer l'activité</button>}
+      </div>
+      <ShareQR route={route} />
+      <TrainingMode route={route} />
     </div>
   );
 }

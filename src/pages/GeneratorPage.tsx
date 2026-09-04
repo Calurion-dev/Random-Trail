@@ -10,7 +10,8 @@ import { useActivityStore } from '../store/activityStore';
 import { reverseGeocode } from '../lib/geocoding';
 import { useNavigate } from 'react-router-dom';
 import { decodeRouteFromHash } from '../lib/share';
-import { parseGPX, parseKML } from '../lib/importers';
+import { parseAny } from '../lib/importers';
+import WeatherWidget from '../components/WeatherWidget';
 import { computeElevationStats } from '../lib/elevation';
 import { estimateDuration, computeDifficultyScore } from '../lib/scoring';
 import type { GeneratedRoute } from '../types';
@@ -79,9 +80,7 @@ export function GeneratorPage() {
     const text = await file.text();
     try {
       let parsed: { coordinates: any; name?: string } | null = null;
-      if (file.name.toLowerCase().endsWith('.gpx')) parsed = parseGPX(text);
-      else if (file.name.toLowerCase().endsWith('.kml')) parsed = parseKML(text);
-      else throw new Error('Format non supporté (GPX/KML uniquement)');
+      parsed = parseAny(text, file.name);
 
       const coords = parsed.coordinates;
       const { ascent, descent, min, max, profile } = await computeElevationStats(coords);
@@ -150,11 +149,12 @@ export function GeneratorPage() {
           </button>
           <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
             Importer
-            <input type="file" accept=".gpx,.kml" style={{ display: 'none' }} onChange={handleImport} />
+            <input type="file" accept=".gpx,.kml,.geojson,.json" style={{ display: 'none' }} onChange={handleImport} />
           </label>
         </div>
         {error && <div className="alert alert-error" style={{ margin: 12 }}>{error}</div>}
         <GeneratorForm />
+        <WeatherWidget />
         <RouteSummary route={route} />
         <ElevationProfile route={route} />
         <RouteActions route={route} onStartActivity={handleStartActivity} />

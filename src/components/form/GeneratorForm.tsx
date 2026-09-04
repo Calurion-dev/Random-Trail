@@ -5,14 +5,54 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { searchAddress, reverseGeocode } from '../../lib/geocoding';
 import { SPORTS, SUBTYPES_VELO, SUBTYPES_COURSE, ROUTE_TYPES, DIFFICULTIES, DIRECTIONS } from '../../constants/sports';
 import type { GeocodingResult } from '../../types';
+import WaypointList from '../WaypointList';
+
+type SectionId = 'sport' | 'depart' | 'parcours' | 'terrain' | 'manuel';
+
+function Section({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="form-section">
+      <button
+        type="button"
+        className="form-section-header"
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="form-title" style={{ marginBottom: 0 }}>{title}</span>
+        <span className={`chevron ${open ? 'open' : ''}`} aria-hidden>▸</span>
+      </button>
+      {open && <div className="form-section-body">{children}</div>}
+    </div>
+  );
+}
 
 export function GeneratorForm() {
-  const { params, setParams, setStart, addWaypoint, clearWaypoints } = useGeneratorStore();
+  const { params, setParams, setStart, clearWaypoints } = useGeneratorStore();
   const { pos, getOnce } = useGeolocation();
   const [q, setQ] = useState('');
   const [results, setResults] = useState<GeocodingResult[]>([]);
   const [searching, setSearching] = useState(false);
   const debouncedQ = useDebounce(q, 500);
+  const [openMap, setOpenMap] = useState<Record<SectionId, boolean>>({
+    sport: true,
+    depart: true,
+    parcours: true,
+    terrain: false,
+    manuel: false,
+  });
+  const toggle = (id: SectionId) => setOpenMap((m) => ({ ...m, [id]: !m[id] }));
+  const setAll = (v: boolean) =>
+    setOpenMap({ sport: v, depart: v, parcours: v, terrain: v, manuel: v });
 
   useEffect(() => {
     if (!debouncedQ) { setResults([]); return; }
@@ -36,9 +76,11 @@ export function GeneratorForm() {
 
   return (
     <div>
-      {/* Sport */}
-      <div className="form-section">
-        <div className="form-title">Sport</div>
+      <div style={{ display: 'flex', gap: 6, padding: '8px 16px', borderBottom: '1px solid var(--border)', justifyContent: 'flex-end' }}>
+        <button type="button" className="btn btn-ghost btn-small" onClick={() => setAll(true)}>Tout déplier</button>
+        <button type="button" className="btn btn-ghost btn-small" onClick={() => setAll(false)}>Tout replier</button>
+      </div>
+      <Section title="Sport" open={openMap.sport} onToggle={() => toggle('sport')}>
         <div className="row">
           {SPORTS.map((s) => (
             <button
@@ -66,11 +108,9 @@ export function GeneratorForm() {
             ))}
           </select>
         </div>
-      </div>
+      </Section>
 
-      {/* Départ */}
-      <div className="form-section">
-        <div className="form-title">Point de départ</div>
+      <Section title="Point de départ" open={openMap.depart} onToggle={() => toggle('depart')}>
         <div className="field">
           <div className="row">
             <button className="btn btn-secondary btn-small" onClick={handleUseGeoloc}>📍 Ma position</button>
@@ -106,15 +146,14 @@ export function GeneratorForm() {
           {params.start ? `✓ ${params.startLabel || `${params.start.lat.toFixed(5)}, ${params.start.lng.toFixed(5)}`}` : 'Cliquez sur la carte pour choisir le départ'}
         </div>
         {params.waypoints.length > 0 && (
-          <div style={{ marginTop: 8, fontSize: '.8rem' }}>
-            {params.waypoints.length} étape(s) manuelle(s) <button className="btn btn-ghost btn-small" onClick={clearWaypoints}>Effacer étapes</button>
+          <div style={{ marginTop: 8 }}>
+            <WaypointList />
+            <button className="btn btn-ghost btn-small" onClick={clearWaypoints} style={{ marginTop: 6 }}>Effacer toutes les étapes</button>
           </div>
         )}
-      </div>
+      </Section>
 
-      {/* Type & direction */}
-      <div className="form-section">
-        <div className="form-title">Parcours</div>
+      <Section title="Parcours" open={openMap.parcours} onToggle={() => toggle('parcours')}>
         <div className="field">
           <label className="label">Type de parcours</label>
           <select className="select" value={params.routeType} onChange={(e) => setParams({ routeType: e.target.value as any })}>
@@ -171,11 +210,9 @@ export function GeneratorForm() {
             <input className="input" type="number" value={params.maxDistanceKm ?? ''} onChange={(e) => setParams({ maxDistanceKm: e.target.value ? parseFloat(e.target.value) : null })} />
           </div>
         </div>
-      </div>
+      </Section>
 
-      {/* Terrain & POI */}
-      <div className="form-section">
-        <div className="form-title">Préférences terrain</div>
+      <Section title="Préférences terrain" open={openMap.terrain} onToggle={() => toggle('terrain')}>
         {[
           { k: 'pisteCyclable', label: 'Privilégier les pistes cyclables' },
           { k: 'sentiers', label: 'Privilégier les sentiers' },
@@ -199,19 +236,17 @@ export function GeneratorForm() {
             Eau potable, bancs, abris, toilettes, points de vue seront recherchés près du tracé (Overpass).
           </div>
         )}
-      </div>
+      </Section>
 
-      {/* Mode manuel */}
-      <div className="form-section">
-        <div className="form-title">Mode manuel</div>
+      <Section title="Mode manuel" open={openMap.manuel} onToggle={() => toggle('manuel')}>
         <div className="toggle-row">
           <span>Édition manuelle des étapes</span>
           <div className={`switch ${params.manualMode ? 'on' : ''}`} onClick={() => setParams({ manualMode: !params.manualMode })} />
         </div>
         <div style={{ fontSize: '.8rem', color: 'var(--text3)', marginTop: 6 }}>
-          {params.manualMode ? 'Cliquez sur la carte pour ajouter des étapes. Glissez-les pour déplacer, popup pour supprimer.' : 'Désactivé : génération automatique autour du départ.'}
+          {params.manualMode ? 'Cliquez sur la carte pour ajouter des étapes. Glissez-les pour déplacer, utilisez la liste ci-dessus pour réordonner.' : 'Désactivé : génération automatique autour du départ.'}
         </div>
-      </div>
+      </Section>
     </div>
   );
 }
