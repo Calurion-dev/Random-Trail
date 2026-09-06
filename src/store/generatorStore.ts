@@ -93,9 +93,11 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
       return Math.max(0.5, d);
     })();
 
-    // Génère 4 candidats pour meilleure cohérence (écart distance minimisé)
-    const candidateCount = params.manualMode ? 1 : 4;
+    // Génère 6 candidats pour meilleure cohérence et respect des critères
+    const candidateCount = params.manualMode ? 1 : 6;
     const candidates: { score: number; route: GeneratedRoute; distanceError: number }[] = [];
+    const finalMaxDistM = params.maxDistanceKm ? params.maxDistanceKm * 1000 : null;
+    const finalMaxEleM = params.maxElevation;
 
     for (let c = 0; c < candidateCount; c++) {
       try {
@@ -152,20 +154,20 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
           terrainMatch: qualityScore > 0,
         }) + qualityScore;
 
-        // Hard constraints filtering
-        if (maxDistM && distance > maxDistM * 1.15) {
-          // penalize heavily but keep candidate for scoring
+        // Filtrage dur des critères (distance max / dénivelé max) — l'app doit respecter les contraintes utilisateur
+        if (maxDistM && distance > maxDistM * 1.03) {
+          if (candidates.length > 0) continue; // on garde seulement si aucun autre candidat ne respecte la contrainte
         }
-        if (maxEleM !== null && maxEleM !== undefined && ascent > maxEleM * 1.3) {
-          // skip extreme violation for best candidate selection, but still allow if no alternative
+        if (maxEleM !== null && maxEleM !== undefined && ascent > maxEleM * 1.08) {
           if (candidates.length > 0) continue;
         }
 
         const simplified = simplifyCoordinates(coordinates, 400);
 
-        // Cohérence distance + direction
+        // Cohérence distance cible : filtrage dur si écart >35% (trop incohérent)
         const distanceError = Math.abs(distance - targetDistanceKm * 1000) / (targetDistanceKm * 1000);
-        let coherenceBonus = distanceError < 0.15 ? 5 : distanceError > 0.3 ? -10 : 0;
+        if (distanceError > 0.38 && candidates.length > 0 && c < candidateCount - 1) continue;
+        let coherenceBonus = distanceError < 0.12 ? 6 : distanceError < 0.18 ? 2 : distanceError > 0.3 ? -10 : distanceError > 0.22 ? -5 : 0;
         // pénalité direction : écart entre cap demandé et barycentre des waypoints
         if (waypoints.length) {
           const avgLat = waypoints.reduce((s, p) => s + p.lat, 0) / waypoints.length;
@@ -207,11 +209,6 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
           elevationProfile: profile,
         };
 
-        // Filtre doux : si erreur >40% on écarte ce candidat sauf si c'est le seul
-        if (distanceError > 0.4 && c < candidateCount - 1) {
-          // garde seulement si pas d'alternative meilleure
-          if (candidates.length > 0) continue;
-        }
         candidates.push({ score: globalScore + coherenceBonus, route, distanceError });
       } catch (e: any) {
         // continue to next candidate
@@ -223,10 +220,20 @@ export const useGeneratorStore = create<GeneratorState>((set, get) => ({
     }
 
     if (!candidates.length) {
-      set({ loading: false, error: 'Impossible de générer un parcours. Réessayez ou modifiez les contraintes.' });
+      set({ loading: false, error: 'Impossible de générer un parcours respectant les critères (distance / dénivelé max). Élargissez les contraintes ou changez la direction.' });
       return;
     }
     candidates.sort((a, b) => b.score - a.score);
-    set({ route: candidates[0].route, loading: false, error: null });
+    const best = candidates[0].route;
+    // Vérification finale stricte
+    if (finalMaxDistM && best.distanceMeters > finalMaxDistM * 1.05) {
+      set({ loading: false, error: `Aucun parcours trouvé sous ${(finalMaxDistM / 1000).toFixed(1)} km (meilleur ${(best.distanceMeters / 1000).toFixed(1)} km). Réduisez la distance cible ou augmentez la distance max.` });
+      return;
+    }
+    if (finalMaxEleM !== null && finalMaxEleM !== undefined && best.ascentMeters > finalMaxEleM * 1.12) {
+      set({ loading: false, error: `Aucun parcours trouvé avec dénivelé ≤ ${finalMaxEleM} m (meilleur ${best.ascentMeters} m). Augmentez le dénivelé max ou changez la direction.` });
+      return;
+    }
+    set({ route: best, loading: false, error: null });
   },
 }));

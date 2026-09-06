@@ -20,7 +20,7 @@ Pas de réseau social, pas de coaching, pas de compétition, pas de paiement.
 - Import **GPX/KML/GeoJSON**, export **GPX/KML/SVG/GeoJSON**, partage par URL compressée (lz-string) + **QR code**
 - Sauvegarde locale IndexedDB (Dexie), préférences localStorage
 - Mode activité : suivi GPS, distance/D+ restants, vitesse/allure, cap, alerte hors-parcours, wake lock
-- **Mode entraînement** (intervalles) et **météo au départ** (Open-Meteo Forecast)
+- **Météo au départ** (Open-Meteo Forecast)
 - PWA online-first (vite-plugin-pwa) avec cache tiles/app shell + **diagnostic cache offline**
 - Thème clair/sombre/système (filtre Leaflet pour tuiles sombres)
 - UI 100% en français, responsive (sidebar/desktop, bottom sheet/mobile)
@@ -140,7 +140,7 @@ Toutes les requêtes ont cache, rate-limit (≥300 ms OSRM), debounce, dégradat
 - ~~Quality terrain via Overpass~~ ✅ fait — `src/lib/osmQuality.ts` analyse highway/cycleway/path
 - ~~Édition ordre étapes par drag-list~~ ✅ fait — `src/components/WaypointList.tsx`
 - ~~Partage via QR, import GeoJSON~~ ✅ fait — `src/components/ShareQR.tsx`, `parseGeoJSON`/`parseAny`
-- ~~Mode entraînement, météo, offline tiles pack~~ ✅ fait — `TrainingMode.tsx`, `WeatherWidget.tsx`, réglages cache tiles
+- ~~Météo, offline tiles pack~~ ✅ fait — `WeatherWidget.tsx`, réglages cache tiles
 - ~~Tests E2E (Playwright), CI Pages~~ ✅ fait — `playwright.config.ts`, `e2e/generator.spec.ts`, `.github/workflows/ci.yml`
 
 Pistes restantes : sync Strava/Google Fit (OAuth backend requis), édition fine du tracé point-à-point, tuiles offline pack pré-téléchargement.

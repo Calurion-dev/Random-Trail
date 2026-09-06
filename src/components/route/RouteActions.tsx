@@ -3,7 +3,6 @@ import { exportGPX, exportKML, exportSVG, exportGeoJSON, downloadFile } from '..
 import { buildShareUrl } from '../../lib/share';
 import { useSavedRoutesStore } from '../../store/savedRoutesStore';
 import ShareQR from '../ShareQR';
-import TrainingMode from '../TrainingMode';
 
 export function RouteActions({ route, onStartActivity }: { route: GeneratedRoute | null; onStartActivity?: () => void }) {
   const save = useSavedRoutesStore((s) => s.save);
@@ -62,7 +61,6 @@ export function RouteActions({ route, onStartActivity }: { route: GeneratedRoute
         {onStartActivity && <button className="btn" style={{ background: '#10b981' }} onClick={onStartActivity}>▶ Lancer l'activité</button>}
       </div>
       <ShareQR route={route} />
-      <TrainingMode route={route} />
     </div>
   );
 }
